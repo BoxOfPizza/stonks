@@ -1,0 +1,127 @@
+import requests
+from bs4 import BeautifulSoup
+
+#The entire function looks up the current price of a stock ticker and either helps user calculate 
+#how much shares they can afford with their budget or returns the price at the moment it checks. 
+
+website = "https://finance.yahoo.com/quote/"
+SPECIAL_STONKS = ['GME', 'AMC']
+
+print("Thanks for using the Stonk Price Checker")
+print("")
+print("Do you want to invest in a stonk or just check the price?")
+print("")
+
+
+#This function looks up the share price of the selected stock ticker
+#and calculates the number of shares user can get with their budget
+
+def option_one():
+    stonk_database = [];
+    while True:
+        try:
+            user_budget = float(input("How much money do you want to invest: "))
+            break
+        except ValueError:
+            print("Please enter a real amount!")
+
+    stonk_ticker = input("What stonk do you want to check: ")
+    
+    # this part checks to ensure symbol is legitimate by utilizing helper function stonk_lookup
+    while stonk_lookup(stonk_ticker) == False:
+        print("")
+        stonk_ticker = input("Please type in a real symbol: ")
+        stonk_lookup(stonk_ticker)
+        
+    
+    
+    source = requests.get(website+stonk_ticker).text
+    soup = BeautifulSoup(source, 'lxml')
+    stonk_price = soup.find('span', {"class":"Trsdu(0.3s) Fw(b) Fz(36px) Mb(-4px) D(ib)"}).get_text(strip=True)
+    
+    
+    total = user_budget/float(stonk_price)
+    rounded_total = round(total, 2)
+    
+    stonk_ticker = stonk_ticker.upper()
+    stonk_database.append(stonk_ticker)
+    stonk_database.append(rounded_total)
+    stonk_database.append(stonk_price)
+    
+    return stonk_database
+
+#This function looks up stock price of selected ticker for user
+
+def option_two():
+    stonk_database = [];
+    stonk_ticker = input("What stonk do you want to check: ")
+    # this part checks to ensure symbol is legitimate
+    while stonk_lookup(stonk_ticker) == False:
+        print("")
+        stonk_ticker = input("Please type in a real symbol: ")
+        stonk_lookup(stonk_ticker)
+        
+    
+    source = requests.get(website+stonk_ticker).text
+    soup = BeautifulSoup(source, 'lxml')
+    stonk_price = soup.find('span', {"class":"Trsdu(0.3s) Fw(b) Fz(36px) Mb(-4px) D(ib)"}).get_text(strip=True)
+    
+    stonk_ticker = stonk_ticker.upper()
+    stonk_database.append(stonk_ticker)
+    stonk_database.append(stonk_price)
+
+
+    return stonk_database
+
+
+#this function checks to see if the stock ticker symbol actually exists.
+#if it doesn't it returns false. If it does it will crash
+#error is ignored and option_one/two function executes as normal.
+#this try/except code is weird. I am actually unsure how to proceed.
+#Feedback would be nice. Thanks!
+
+def stonk_lookup(user_input):
+    website_checker = "https://www.marketwatch.com/tools/quotes/lookup.asp?siteID=mktw&Lookup="
+    source = requests.get(website_checker + user_input)
+    soup = BeautifulSoup(source.content, 'lxml')
+    try:
+        false_hunter = soup.find('div', {"class":"important"}).get_text(strip=True)
+        while false_hunter == "There were no matches found for '" + str(user_input) + "'":
+            return False
+    except Exception:
+            pass
+        
+#for meme stocks
+def easter_egg(stonk):
+    for i in range(len(SPECIAL_STONKS)):
+        if SPECIAL_STONKS[i] == stonk:
+            print("")
+            print(stonk + " currently costs $" + str(user_info[2]) + ".")
+            print("")
+            print("With your budget, you can afford approximately "+ str(user_info[1]) + " " + stonk + " shares.")
+            print("")
+            print("This company is heavily shorted and the shares are worth way more than you know!")
+            print("Buy a few shares if you can afford them and HOLD them with your Diamond Hands!")
+            if stonk == "GME":
+                print("Visit reddit.com/r/SuperStonk if you are unsure and want more info.")
+            elif stonk =="AMC":
+                print("Visit reddit.com/r/AMCstock you are unsure and want more info.")
+            print("")
+            print("Remember: the price is wrong!!")
+            print("")
+            print("SEE YOU AT THE MOON!!!")
+        return True
+    
+check_or_invest = int(input("Type '1' to invest or '2' to just check prices: " ))
+while (check_or_invest > 2) or (check_or_invest < 1) or (type(check_or_invest) == "string"):
+    check_or_invest = int(input("Please type '1' to invest or '2' to just check prices: "))
+if check_or_invest == 1:
+    user_info = option_one()
+    if easter_egg(user_info[0]) == True:
+        exit
+    else:
+        print(stonk + " currently costs $" + str(user_info[2]) + ".")
+        print("With your budget, you can afford " + str(user_info[1]) + " " + user_info[0] + " shares.")
+elif check_or_invest == 2:
+    user_info = option_two()
+    print(user_info[0] + " is worth $" + str(user_info[1]) + " per share right now.")
